@@ -5,12 +5,12 @@ export default async function handler(req, res) {
 
   const path = req.query.path || [];
   const qs = new URLSearchParams(req.query);
-  qs.delete('path'); // don’t forward the internal nextjs catch-all param
+  qs.delete('path'); // remove the internal catch-all param
 
   const url = `${process.env.RUSELY_BASE}/public/v1/${path.join('/')}${qs.toString() ? `?${qs}` : ''}`;
 
   try {
-    const response = await fetch(url, {
+    const r = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -18,10 +18,10 @@ export default async function handler(req, res) {
         'x-api-key': process.env.RUSELY_API_KEY,
       },
     });
-
-    const data = await response.json();
-    return res.status(response.status).json(data);
+    const data = await r.json();
+    return res.status(r.status).json(data);
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch data' });
   }
 }
+
