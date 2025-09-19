@@ -3,25 +3,32 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const path = req.query.path || [];
-  const qs = new URLSearchParams(req.query);
-  qs.delete('path'); // remove the internal catch-all param
+  // path can be string or array; join safely
+  const raw = req.query.path;
+  const path = Array.isArray(raw) ? raw.join('/') : (raw || '');
 
-  const url = `${process.env.REUSELY_BASE}/public/v1/${path.join('/')}${qs.toString() ? `?${qs}` : ''}`;
+  // Build v2 public URL
+  const base = process.env.REUSELY_BASE?.replace(/\/+$/,''); // trim trailing slash
+  const search = new URLSearchParams(req.query);
+  search.delete('path'); // remove our catch-all param
+  const qs = search.toString();
+  const url = `${base}/api/v2/public/${path}${qs ? `?${qs}` : ''}`;
 
   try {
     const r = await fetch(url, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'x-tenant-id': process.env.REUSELY_TENANT_ID,
         'x-api-key': process.env.REUSELY_API_KEY,
-      },
+        'content-type': 'application/json',
+        'accept': 'application/json'
+      }
     });
-    const data = await r.json();
-    return res.status(r.status).json(data);
+
+    const text = await r.text(); // keep error bodies intact
+    res.status(r.status).send(text);
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch data' });
+    res.status(502).json({ error: 'Proxy failed', detail: String(err) });
   }
 }
 
