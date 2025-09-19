@@ -1,28 +1,45 @@
-// api/public/catalog/categories.js
+// /api/public/catalog/categories.js
+// Proxies Reusely Public API → categories list
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const base = process.env.REUSELY_BASE || 'api-us.reusely.com'; // no https
-  const url  = `https://${base}/public/v1/catalog/categories`;
+  // Ensure we have a proper https base and no trailing slash
+  const base = (process.env.REUSELY_BASE || 'https://api-us.reusely.com').replace(/\/+$/, '');
+  // Reusely Public API uses v2; endpoint is singular: /catalog/category
+  const url = `${base}/api/v2/public/catalog/category`;
 
   try {
     const r = await fetch(url, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'x-tenant-id': process.env.REUSELY_TENANT_ID,
-        'x-api-key':    process.env.REUSELY_API_KEY,
+        'x-api-key': process.env.REUSELY_API_KEY,
       },
     });
 
-    const data = await r.json();
-    if (!r.ok) {
-      return res.status(r.status).json({ error: data?.message || 'Upstream error' });
+    const text = await r.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
     }
+
+    if (!r.ok) {
+      return res.status(r.status).json({
+        error: 'Upstream error',
+        status: r.status,
+        detail: typeof data === 'object' ? data : text,
+      });
+    }
+
     return res.status(200).json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Proxy failed', detail: String(err) });
+    return res.status(502).json({ error: 'Proxy failed', detail: String(err) });
   }
 }
+
