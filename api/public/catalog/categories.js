@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const base = process.env.RUSELY_BASE || 'api-us.reusely.com'; // no https
+  const base = process.env.REUSELY_BASE || 'api-us.reusely.com'; // no https
   const url  = `https://${base}/public/v1/catalog/categories`;
 
   try {
@@ -12,8 +12,8 @@ export default async function handler(req, res) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'x-tenant-id': process.env.RUSELY_TENANT_ID,
-        'x-api-key':    process.env.RUSELY_API_KEY,
+        'x-tenant-id': process.env.REUSELY_TENANT_ID,
+        'x-api-key':    process.env.REUSELY_API_KEY,
       },
     });
 
