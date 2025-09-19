@@ -7,15 +7,15 @@ export default async function handler(req, res) {
   const qs = new URLSearchParams(req.query);
   qs.delete('path'); // remove the internal catch-all param
 
-  const url = `${process.env.RUSELY_BASE}/public/v1/${path.join('/')}${qs.toString() ? `?${qs}` : ''}`;
+  const url = `${process.env.REUSELY_BASE}/public/v1/${path.join('/')}${qs.toString() ? `?${qs}` : ''}`;
 
   try {
     const r = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'x-tenant-id': process.env.RUSELY_TENANT_ID,
-        'x-api-key': process.env.RUSELY_API_KEY,
+        'x-tenant-id': process.env.REUSELY_TENANT_ID,
+        'x-api-key': process.env.REUSELY_API_KEY,
       },
     });
     const data = await r.json();
