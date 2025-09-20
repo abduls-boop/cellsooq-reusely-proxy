@@ -1,6 +1,6 @@
 import { withCors } from '../../_cors.js';
 
-// /api/public/catalog/devices?category=<slug>
+// GET /api/public/catalog/devices?category=<categorySlug>
 async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -8,18 +8,17 @@ async function handler(req, res) {
   const category = (req.query.category || '').toString().trim().toLowerCase();
   if (!category) return res.status(400).json({ error: 'Missing ?category=slug' });
 
-  // Reusely public endpoint that lists device “series/brands” inside a category
+  // Reusely “series/brands by category”
   const url = `${base}/public/catalog/category-brand/${encodeURIComponent(category)}`;
 
   try {
     const r = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
-        'x-tenant-id': (process.env.REUSELY_TENANT_ID || '').trim(),
-        'x-api-key'  : (process.env.REUSELY_API_KEY   || '').trim(),
+        'content-type': 'application/json',
+        'x-tenant-id' : (process.env.REUSELY_TENANT_ID || '').trim(),
+        'x-api-key'   : (process.env.REUSELY_API_KEY   || '').trim(),
       },
     });
-
     const data = await r.json().catch(() => null);
     if (!r.ok) return res.status(r.status).json({ error: 'Upstream error', status: r.status, detail: data?.message || data || 'Unknown' });
     return res.status(200).json(data);
