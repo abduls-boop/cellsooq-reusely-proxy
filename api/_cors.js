@@ -1,18 +1,28 @@
 // api/_cors.js
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,OPTIONS',
-  'Access-Control-Allow-Headers': 'content-type, x-tenant-id, x-api-key, authorization',
-};
 
 export function withCors(handler) {
   return async (req, res) => {
+    const origin = req.headers.origin || '*';
+    const requestHeaders = req.headers['access-control-request-headers'];
+
+    // Always set CORS headers (before early returns)
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin, Access-Control-Request-Headers');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    // Mirror whatever the browser asked for, or provide a permissive default
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      requestHeaders || 'content-type, x-tenant-id, x-api-key, accept'
+    );
+
+    // Preflight ends here
     if (req.method === 'OPTIONS') {
-      for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-      return res.status(200).end();
+      // 204 = No Content (cleaner than 200)
+      res.status(204).end();
+      return;
     }
-    const out = await handler(req, res);
-    for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-    return out;
+
+    // Run the actual handler
+    return handler(req, res);
   };
 }
