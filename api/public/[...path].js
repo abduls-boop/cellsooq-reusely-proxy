@@ -1,30 +1,32 @@
-import { withCors } from '../_cors.js';
+export default async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-export default withCors(async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  const base = (process.env.REUSELY_BASE || 'https://api-us.reusely.com/api/v2').trim().replace(/\/$/, '');
 
-  const path = req.query.path || [];
-  const base = process.env.REUSELY_BASE || 'api-us.reusely.com';
-  const url = `https://${base}/public/v1/${path.join('/')}${req.url.includes('?') ? '' : ''}`;
+  // join the dynamic path after /public
+  const p = req.query.path;
+  const path = Array.isArray(p) ? p.join('/') : (p || '');
+
+  // forward any query params except our dynamic catch-all param
+  const qs = new URLSearchParams(req.query);
+  qs.delete('path');
+  const qstr = qs.toString();
+  const url = `${base}/public/${path}${qstr ? `?${qstr}` : ''}`;
 
   try {
     const r = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'x-tenant-id': process.env.REUSELY_TENANT_ID,
-        'x-api-key': process.env.REUSELY_API_KEY,
+        'x-tenant-id': (process.env.REUSELY_TENANT_ID || '').trim(),
+        'x-api-key'  : (process.env.REUSELY_API_KEY   || '').trim(),
       },
     });
 
-    const data = await r.json();
-    if (!r.ok) {
-      return res.status(r.status).json({ error: 'Upstream error', status: r.status, detail: data?.message || data });
-    }
+    const data = await r.json().catch(() => null);
+    if (!r.ok) return res.status(r.status).json({ error: 'Upstream error', status: r.status, detail: data?.message || data || 'Unknown' });
     return res.status(200).json(data);
   } catch (err) {
     return res.status(500).json({ error: 'Proxy failed', detail: String(err) });
   }
-});
+}
