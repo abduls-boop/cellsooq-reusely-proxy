@@ -1,6 +1,6 @@
-import { withCors } from '../../../_cors.js';
+import { withCors } from '../../../../_cors.js';
 
-// /api/public/catalog/model/:slug/products
+// GET /api/public/catalog/model/{slug}/products
 async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -8,13 +8,11 @@ async function handler(req, res) {
   const slug = (req.query.slug || '').toString().trim().toLowerCase();
   if (!slug) return res.status(400).json({ error: 'Missing model slug' });
 
-  // Reusely doc: retrieve products (variants/specs) for a given model
   const url = `${base}/public/catalog/model/${encodeURIComponent(slug)}/products`;
 
   try {
     const r = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
         'x-tenant-id': (process.env.REUSELY_TENANT_ID || '').trim(),
         'x-api-key'  : (process.env.REUSELY_API_KEY   || '').trim(),
       },
@@ -26,5 +24,6 @@ async function handler(req, res) {
     return res.status(500).json({ error: 'Proxy failed', detail: String(e) });
   }
 }
+
 export default withCors(handler);
 
