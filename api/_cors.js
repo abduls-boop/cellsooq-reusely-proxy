@@ -11,9 +11,13 @@ export function withCors(handler) {
       Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
       return res.status(200).end();
     }
-    const out = await handler(req, res);
-    Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
-    return out;
+    try {
+      const out = await handler(req, res);
+      Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+      return out;
+    } catch (e) {
+      Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+      return res.status(500).json({ error: 'Proxy failed', detail: String(e) });
+    }
   };
 }
-
